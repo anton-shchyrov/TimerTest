@@ -19,6 +19,7 @@ var
   i: Integer;
   Timer: THandle;
   Period: Int64;
+  EndTime: Double;
 begin
   Win32Check(QueryPerformanceFrequency(Freq));
   FreqMSec := Freq / 1E+3;
@@ -26,11 +27,14 @@ begin
   Win32Check(Timer <> 0);
   try
     Period := - CPeriod * C100NsecPerSec;
-    //Win32Check(SetWaitableTimer(Timer, Period, CPeriod, nil, nil, False));
     for i := 0 to 9 do begin
       Win32Check(QueryPerformanceCounter(Start));
-      if WaitForSingleObject(Timer, CPeriod) = WAIT_TIMEOUT then begin
-        Win32Check(QueryPerformanceCounter(Stop));
+      Win32Check(SetWaitableTimer(Timer, Period, 0, nil, nil, False));
+      if WaitForSingleObject(Timer, INFINITE) = WAIT_OBJECT_0 then begin
+        EndTime := Start + CPeriod * FreqMSec;
+        repeat
+          Win32Check(QueryPerformanceCounter(Stop));
+        until Stop >= EndTime;
         Writeln((Stop - Start) / FreqMSec : 3 : 3);
       end else
         Writeln('Other result');
